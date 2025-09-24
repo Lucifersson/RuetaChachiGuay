@@ -8,11 +8,17 @@ from fastapi.middleware.cors import CORSMiddleware
 import random
 
 # Ruleta
-from .environment import env_vars
+from .environment import env_vars as env
+from .api import auth
 
 
-app = FastAPI()
+# Configurar la app
+app = FastAPI(debug=env.DEBUG, title="Ruleta")
 
+# Configurar las rutas
+app.include_router(auth.router, prefix="/auth")
+
+# Configurar middlewares
 app.add_middleware(
     CORSMiddleware,
     allow_origins=(
@@ -28,11 +34,4 @@ app.add_middleware(
 )
 
 
-@app.get("/")
-async def root() -> str:
-    return "Funciona"
-
-
-@app.get("/saldo")
-async def generar_saldo_aleatorio():
-    return { 'saldo': random.uniform(1000.0, 3000.0) }
+__all__ = ('app',)
