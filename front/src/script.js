@@ -100,3 +100,25 @@ window.addEventListener("load", () => {
     console.log("Número del backend:", numeroDelBack);
     girarHasta(numeroDelBack);
 });
+
+async function actualizarDinero() {
+    try {
+        // Cambia esta URL por tu endpoint real
+        const response = await fetch('http://localhost:8000/saldo');
+        if (!response.ok) throw new Error('Error en la respuesta del servidor');
+
+        const { saldo } = await response.json();
+
+        // Suponiendo que el backend devuelve { dinero: 1300.45 }
+        const dinero = parseFloat(saldo).toFixed(2); // Forzamos dos decimales
+        const h2 = document.getElementById('dinero');
+        h2.textContent = `${dinero} $$`;
+
+} catch (err) {
+        console.error('No se pudo actualizar el dinero:', err);
+    }
+}
+
+// Llamamos a la función al cargar la página
+window.addEventListener('DOMContentLoaded', actualizarDinero);
+
