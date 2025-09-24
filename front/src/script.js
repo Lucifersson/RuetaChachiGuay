@@ -37,48 +37,66 @@ document.addEventListener('DOMContentLoaded', () => {
 
 const carrusel = document.getElementById("carrusel");
 
-function generarCasillas() {
-    for (let i = 0; i <= 36; i++) {
-        const cell = document.createElement("div");
+// Generar casillas de 0 a 36
+for (let i = 0; i <= 36; i++) {
+    const casilla = document.createElement("div");
+    casilla.className = "h-16 flex items-center justify-center snap-center text-xl font-bold border-b border-gray-500";
 
-        cell.className = `
-      border-2 border-white flex items-center justify-center
-      text-white font-extrabold text-xl
-      h-[70px] w-[70px] mx-auto
-      shadow-[inset_0_2px_6px_rgba(0,0,0,0.5)]
-      transition-transform duration-300 hover:-translate-y-1 hover:shadow-xl
-      snap-center
-    `;
+    // Colores según regla de ruleta
+    if (i === 0) {
+        casilla.classList.add("bg-green-600", "text-white");
+    } else if (i % 2 === 0) {
+        casilla.classList.add("bg-black", "text-white");
+    } else {
+        casilla.classList.add("bg-red-600", "text-white");
+    }
 
-        if (i === 0) {
-            cell.classList.add("bg-green-600");
-        } else if (i % 2 === 0) {
-            cell.classList.add("bg-black");
-        } else {
-            cell.classList.add("bg-red-600");
+    casilla.textContent = i;
+    carrusel.appendChild(casilla);
+}
+
+/**
+ * Gira la ruleta hasta un número específico
+ * @param {number} numero - El número que debe quedar en el centro
+ * @param duracion
+ */
+function girarHasta(numero, duracion = 5000) {
+    const casillas = carrusel.children;
+    const target = Array.from(casillas).find(c => parseInt(c.textContent) === numero);
+    if (!target) return;
+
+    const offsetTop = target.offsetTop;
+    const centerOffset = carrusel.clientHeight / 2 - target.clientHeight / 2;
+
+    // Añadimos vueltas extra para que parezca real
+    const vueltasExtra = carrusel.scrollHeight * 3;
+    const destinoFinal = offsetTop - centerOffset + vueltasExtra;
+
+    const inicio = carrusel.scrollTop;
+    const distancia = destinoFinal - inicio;
+    const startTime = performance.now();
+
+    function animarScroll(time) {
+        const elapsed = time - startTime;
+        const progreso = Math.min(elapsed / duracion, 1);
+
+        // Ease-out cúbico → empieza rápido y termina suave
+        const easeOut = 1 - Math.pow(1 - progreso, 3);
+
+        carrusel.scrollTop = inicio + distancia * easeOut;
+
+        if (progreso < 1) {
+            requestAnimationFrame(animarScroll);
         }
-
-        cell.textContent = i;
-        carrusel.appendChild(cell);
     }
+
+    requestAnimationFrame(animarScroll);
 }
 
-// Generar varias veces para simular infinito
-for (let j = 0; j < 5; j++) {
-    generarCasillas();
-}
 
-// Colocar scroll al centro
-carrusel.scrollTop = carrusel.scrollHeight / 2;
-
-// Bucle infinito
-carrusel.addEventListener("scroll", () => {
-    const { scrollTop, scrollHeight, clientHeight } = carrusel;
-
-    if (scrollTop <= 0) {
-        carrusel.scrollTop = scrollHeight / 2 - clientHeight;
-    } else if (scrollTop + clientHeight >= scrollHeight) {
-        carrusel.scrollTop = scrollHeight / 2 - clientHeight;
-    }
+// ======== LLAMADA AUTOMÁTICA AL CARGAR LA PÁGINA =========
+window.addEventListener("load", () => {
+    const numeroDelBack = Math.floor(Math.random() * 37); // simula número recibido del backend
+    console.log("Número del backend:", numeroDelBack);
+    girarHasta(numeroDelBack);
 });
-
