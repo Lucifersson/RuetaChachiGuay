@@ -4,12 +4,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-# Python
-import random
-
 # Ruleta
-from .environment import env_vars as env
-from .api import auth
+from ruleta.environment import env_vars as env
+from ruleta.api import auth
 
 
 # Configurar la app

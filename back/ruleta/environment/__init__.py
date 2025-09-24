@@ -1,7 +1,7 @@
 """ Variables de entorno """
 
 from typing import NamedTuple
-from . import core
+from ruleta.environment import core
 
 
 class EnvironmentVars(NamedTuple):

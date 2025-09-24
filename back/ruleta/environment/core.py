@@ -2,7 +2,7 @@
 
 import os
 from typing import get_type_hints, TypeVar, Type
-from .parsers import PARSERS
+from ruleta.environment.parsers import PARSERS
 
 
 T = TypeVar('T')

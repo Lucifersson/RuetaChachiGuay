@@ -1,10 +1,10 @@
 """ Inicializa el ORM y crea las tablas """
 
 # Ruleta
-from .environment import env_vars as env
+from ruleta.environment import env_vars as env
 # Importar los modelos para que se carguen en la metadata de SQLModel
 # y se puedan crear las tablas en la BBDD
-from . import models as _
+import ruleta.models as _
 
 # Python
 from collections.abc import Iterator
