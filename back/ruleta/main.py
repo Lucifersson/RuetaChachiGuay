@@ -8,11 +8,10 @@ from fastapi.middleware.cors import CORSMiddleware
 import random
 
 # Ruleta
-from ruleta.environment import env_vars
+from .environment import env_vars
 
 
 app = FastAPI()
-
 
 app.add_middleware(
     CORSMiddleware,
