@@ -12,6 +12,11 @@ class User(BaseModel):
     password: str
 
 
+@router.post("/register")
+async def crear_cuenta(user: User) -> dict[str, str]:
+    return { "status": "error", "info": "en construccion" }
+
+
 @router.post("/login")
 async def inicio_sesion(user: User) -> dict[str, str]:
-    return { 'status': 'funciona' }
+    return { "status": "ok" }
