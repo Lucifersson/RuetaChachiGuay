@@ -5,7 +5,9 @@ from . import core
 
 
 class EnvironmentVars(NamedTuple):
-    PRUEBAS: str
+    POSTGRES_USER: str
+    POSTGRES_PASSWORD: str
+    POSTGRES_DB: str
 
 
 env_vars: EnvironmentVars = core.load_environment_args(EnvironmentVars)
