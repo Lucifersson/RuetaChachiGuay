@@ -35,5 +35,5 @@ async def root() -> str:
 
 
 @app.get("/saldo")
-async def generar_saldo_aleatorio() -> float:
-    return random.uniform(1000.0, 3000.0)
+async def generar_saldo_aleatorio():
+    return { 'saldo': random.uniform(1000.0, 3000.0) }
