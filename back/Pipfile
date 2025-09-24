@@ -1,0 +1,14 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+psycopg = {extras = ["binary"], version = "==3.2.10"}
+fastapi = {extras = ["standard"], version = "==0.117.1"}
+
+[dev-packages]
+
+[requires]
+python_version = "3.13"
+python_full_version = "3.13.7"
