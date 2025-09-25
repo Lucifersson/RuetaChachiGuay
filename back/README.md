@@ -33,7 +33,7 @@ $ pipenv install -d
 Una vez tengas los paquetes actualizados, es recomendalbe actualizar las tablas de la BBDD:
 
 ```bash
-$ pipenv run python main.py
+$ pipenv run python main.py -c -d
 ```
 
 > Ten en cuenta que esto borra todas las tablas con su contenido y vuelve a crear las tablas vacías.
@@ -55,7 +55,8 @@ Crear las variables de entorno en el fichero **.env** y ejecutar lo siguiente:
 ```bash
 $ docker compose -f docker-compose.dev.yml up -d
 $ pipenv install -d
-$ # Ejecuta esta orden solo si hay cambios y no tienes datos importantes en la BBDD
-$ # pipenv run python main.py
+$ # pipenv run python main.py -c -d
+$ # Si se añade la opcion -d elimina las tablas de la BBDD
+$ pipenv run python main.py -c
 $ pipenv run fastapi dev main.py
 ```
