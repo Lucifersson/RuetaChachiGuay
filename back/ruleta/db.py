@@ -18,11 +18,17 @@ engine = create_engine(
     echo=env.DEBUG
 )
 
-SQLModel.metadata.create_all(engine)
+
+def drop_models() -> None:
+    SQLModel.metadata.drop_all(engine)
+
+
+def create_models() -> None:
+    SQLModel.metadata.create_all(engine)
 
 
 def get_session() -> Iterator[Session]:
     with Session(engine) as session:
         yield session
 
-__all__ = ('get_session',)
+__all__ = ('get_session', 'engine', 'create_models', 'drop_models')

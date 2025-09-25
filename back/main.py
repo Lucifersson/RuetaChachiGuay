@@ -1,7 +1,13 @@
 """ Punto de entrada del backend """
 
+import ruleta.db
+
 def main() -> None:
-    pass # Aqui se podria configurar si se ejecuta
+    print("Eliminando tablas...")
+    ruleta.db.drop_models()
+
+    print("Creando tablas...")
+    ruleta.db.create_models()
 
 
 if __name__ == "__main__":
