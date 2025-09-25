@@ -1,5 +1,4 @@
 @import "tailwindcss";
-
 #carrusel {
     scrollbar-width: none; /* Firefox */
     -ms-overflow-style: none; /* IE/Edge */
