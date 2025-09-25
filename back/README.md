@@ -1,32 +1,62 @@
 # ruleta-backend
 Backend para el proyecto de Proyecto Intermodular
 
-# Guía de arranque del proyecto
+# Instrucciones para ejecutar el proyecto
 
-## 1. Variables de entorno
+## Fichero .env
 
-Antes de arrancar el servidor, es necesario crear un fichero **.env** en la raíz del proyecto.
-En este fichero debes **definir todas las variables** que aparecen en `env.example`, respetando los tipos que ahí se indican.
-Ajusta los valores según tu entorno.
+Pirmero tenemos que definir un fichero **.env** para la configuracion.
+Todas las variables necesarias están en **.env.example**
 
----
+## Base de datos
 
-## 2. Arrancar el servidor
+Levantar la base de datos se hace de la siguiente forma:
 
-Una vez configurado el `.env` hay que comprobar que los paquetes esten instalados correctamnente.
+```bash
+$ docker compose -f docker-compose.dev.yml up -d
+```
+
+Para parar la base de datos se hace asi:
+
+```bash
+$ docker compose -f docker-compose.dev.yml down
+```
+
+## Servidor
+
+A la hora de levantar el servidor es recomendable actualizar los paquetes:
+
 ```bash
 $ pipenv install -d
 ```
-Una vez que los paquetes están instalados tienes varias opcioens para arrancar el servidor:
 
-### Opción 1: Entrar al shell de Pipenv
+Una vez tengas los paquetes actualizados, es recomendalbe actualizar las tablas de la BBDD:
 
 ```bash
-$ pipenv shell
-$ fastapi dev ruleta/main.py
+$ pipenv run python main.py -c -d
 ```
 
-### Opción 2: Arrancar el servidor sin entrar a la shell de Pipenv
+> Ten en cuenta que esto borra todas las tablas con su contenido y vuelve a crear las tablas vacías.
+
+> Esto se hace así por que no van a haber muchos cambios en la BBDD y utilizar
+> una herramienta de migraciones es más costoso. Si el proyecto crece habrá que
+> configurar una herramienta para las migraciones.
+
+Una vez creada los modelos de la base de datos, se ejecuta el servidor así:
+
 ```bash
-$ pipenv run fastapi dev ruleta/main.py
+$ pipenv run fastapi dev main.py
+```
+
+## Resumen
+
+Crear las variables de entorno en el fichero **.env** y ejecutar lo siguiente:
+
+```bash
+$ docker compose -f docker-compose.dev.yml up -d
+$ pipenv install -d
+$ # pipenv run python main.py -c -d
+$ # Si se añade la opcion -d elimina las tablas de la BBDD
+$ pipenv run python main.py -c
+$ pipenv run fastapi dev main.py
 ```
