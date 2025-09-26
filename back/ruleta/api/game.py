@@ -6,8 +6,5 @@ import random
 router = APIRouter(tags=["game"])
 
 @router.get("/rng")
-async def numero_aleatorio(
-    min_range: int = Query(0, description="Valor mínimo a devolver"),
-    max_range: int = Query(100, description="Valor máximo a devolver")
-):
-    return { "number": random.randint(min(min_range, max_range), max(min_range, max_range)) }
+async def numero_aleatorio():
+    return { "number": random.randint(0, 36) }
