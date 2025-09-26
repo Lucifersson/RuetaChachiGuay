@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 # Ruleta
 from ruleta.environment import env_vars as env
-from ruleta.api import auth
+from ruleta.api import auth, game
 
 
 # Configurar la app
@@ -14,6 +14,7 @@ app = FastAPI(debug=env.DEBUG, title="Ruleta")
 
 # Configurar las rutas
 app.include_router(auth.router, prefix="/auth")
+app.include_router(game.router, prefix="/game")
 
 # Configurar middlewares
 app.add_middleware(
