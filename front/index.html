@@ -60,7 +60,9 @@
     <!-- Casilla del cero -->
     <div class="border-2 border-white rounded-l-2xl h-16 sm:h-48 w-12 sm:w-[80px]
               absolute top-16 sm:top-32 left-2 sm:left-9 text-center text-white flex items-center justify-center
-              bg-gradient-to-b from-emerald-600 to-emerald-800">
+              bg-gradient-to-b from-emerald-600 to-emerald-800 cursor-pointer hover:-translate-y-1 hover:shadow-xl transition-transform duration-200"
+         data-bet-type="numero"
+         data-bet-value="0">
         <h2 class="align-middle">0</h2>
     </div>
 
@@ -77,35 +79,53 @@
 
         <!-- Fila 1 -->
         <div class="grid grid-cols-3 gap-2 mb-2 h-1/2 text-xs sm:text-sm md:text-base">
-            <div class="bg-green-800 border-2 border-white shadow-[inset_0_2px_6px_rgba(0,0,0,0.5)] rounded-xl flex items-center justify-center text-white font-bold hover:-translate-y-1 hover:shadow-xl cursor-pointer">
+            <div class="bg-green-800 border-2 border-white shadow-[inset_0_2px_6px_rgba(0,0,0,0.5)] rounded-xl flex items-center justify-center text-white font-bold hover:-translate-y-1 hover:shadow-xl cursor-pointer transition-transform duration-200"
+                 data-bet-type="docena"
+                 data-bet-value="1">
                 1 - 12
             </div>
-            <div class="bg-green-800 border-2 border-white shadow-[inset_0_2px_6px_rgba(0,0,0,0.5)] rounded-xl flex items-center justify-center text-white font-bold hover:-translate-y-1 hover:shadow-xl cursor-pointer">
+            <div class="bg-green-800 border-2 border-white shadow-[inset_0_2px_6px_rgba(0,0,0,0.5)] rounded-xl flex items-center justify-center text-white font-bold hover:-translate-y-1 hover:shadow-xl cursor-pointer transition-transform duration-200"
+                 data-bet-type="docena"
+                 data-bet-value="2">
                 13 - 24
             </div>
-            <div class="bg-green-800 border-2 border-white shadow-[inset_0_2px_6px_rgba(0,0,0,0.5)] rounded-xl flex items-center justify-center text-white font-bold hover:-translate-y-1 hover:shadow-xl cursor-pointer">
+            <div class="bg-green-800 border-2 border-white shadow-[inset_0_2px_6px_rgba(0,0,0,0.5)] rounded-xl flex items-center justify-center text-white font-bold hover:-translate-y-1 hover:shadow-xl cursor-pointer transition-transform duration-200"
+                 data-bet-type="docena"
+                 data-bet-value="3">
                 25 - 36
             </div>
         </div>
 
         <!-- Fila 2 -->
         <div class="grid grid-cols-6 gap-2 h-1/2 text-xs sm:text-sm md:text-base">
-            <div class="bg-green-800 border-2 border-white rounded-xl flex items-center justify-center text-white font-bold hover:-translate-y-1 hover:shadow-xl cursor-pointer">
+            <div class="bg-green-800 border-2 border-white rounded-xl flex items-center justify-center text-white font-bold hover:-translate-y-1 hover:shadow-xl cursor-pointer transition-transform duration-200"
+                 data-bet-type="mitad"
+                 data-bet-value="baja">
                 1 - 18
             </div>
-            <div class="bg-green-800 border-2 border-white rounded-xl flex items-center justify-center text-white font-bold hover:-translate-y-1 hover:shadow-xl cursor-pointer">
+            <div class="bg-green-800 border-2 border-white rounded-xl flex items-center justify-center text-white font-bold hover:-translate-y-1 hover:shadow-xl cursor-pointer transition-transform duration-200"
+                 data-bet-type="paridad"
+                 data-bet-value="par">
                 Par
             </div>
-            <div class="bg-red-600 border-2 border-white rounded-xl flex items-center justify-center text-white font-bold hover:-translate-y-1 hover:shadow-xl cursor-pointer">
+            <div class="bg-red-600 border-2 border-white rounded-xl flex items-center justify-center text-white font-bold hover:-translate-y-1 hover:shadow-xl cursor-pointer transition-transform duration-200"
+                 data-bet-type="color"
+                 data-bet-value="rojo">
                 ROJO
             </div>
-            <div class="bg-black border-2 border-white rounded-xl flex items-center justify-center text-white font-bold hover:-translate-y-1 hover:shadow-xl cursor-pointer">
+            <div class="bg-black border-2 border-white rounded-xl flex items-center justify-center text-white font-bold hover:-translate-y-1 hover:shadow-xl cursor-pointer transition-transform duration-200"
+                 data-bet-type="color"
+                 data-bet-value="negro">
                 NEGRO
             </div>
-            <div class="bg-green-800 border-2 border-white rounded-xl flex items-center justify-center text-white font-bold hover:-translate-y-1 hover:shadow-xl cursor-pointer">
+            <div class="bg-green-800 border-2 border-white rounded-xl flex items-center justify-center text-white font-bold hover:-translate-y-1 hover:shadow-xl cursor-pointer transition-transform duration-200"
+                 data-bet-type="paridad"
+                 data-bet-value="impar">
                 Impar
             </div>
-            <div class="bg-green-800 border-2 border-white rounded-xl flex items-center justify-center text-white font-bold hover:-translate-y-1 hover:shadow-xl cursor-pointer">
+            <div class="bg-green-800 border-2 border-white rounded-xl flex items-center justify-center text-white font-bold hover:-translate-y-1 hover:shadow-xl cursor-pointer transition-transform duration-200"
+                 data-bet-type="mitad"
+                 data-bet-value="alta">
                 19 - 36
             </div>
         </div>
@@ -117,6 +137,11 @@
     <div class="bg-amber-100 bg-opacity-90 backdrop-blur-md rounded-xs p-2 sm:p-4 text-zinc-800 text-center">
         <h2 id="dinero" class="text-2xl sm:text-5xl font-bold m-0 p-0">test</h2>
     </div>
+</div>
+
+<!-- Notificación de apuesta -->
+<div id="bet-notification" class="fixed top-20 right-2 sm:right-8 w-64 p-4 rounded-lg shadow-lg transform translate-x-full transition-transform duration-300 z-50">
+    <!-- Se llena dinámicamente -->
 </div>
 
 <script src="src/script.js" type="module"></script>

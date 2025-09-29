@@ -1,5 +1,10 @@
 // src/grid.js
 
+// ============ CONFIGURACIÓN DE APUESTAS ============
+const BET_AMOUNT = 100; // Cantidad fija de apuesta
+const BACKEND_URL = 'http://localhost:8000'; // URL del backend
+let currentBet = null; // Apuesta actual
+
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Generando grid de números...');
     const grid = document.getElementById('grid');
@@ -37,12 +42,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
             div.textContent = numero;
             div.setAttribute('data-number', numero);
+            div.setAttribute('data-bet-type', 'numero');
+            div.setAttribute('data-bet-value', numero);
 
             // Agregar event listener para hacer click en el número
             div.addEventListener('click', () => {
                 console.log(`Clicked on number: ${numero}`);
                 if (!isSpinning) {
-                    girarHasta(numero);
+                    realizarApuesta('numero', numero);
                 }
             });
 
@@ -52,7 +59,145 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     console.log(`Grid generado con ${numero - 1} números`);
+
+    // Inicializar listeners para apuestas especiales
+    initializeBetListeners();
 });
+
+// ============ SISTEMA DE APUESTAS ============
+
+/**
+ * Inicializa los event listeners para todas las casillas de apuesta
+ */
+function initializeBetListeners() {
+    // Obtener todas las casillas con data-bet-type
+    const betElements = document.querySelectorAll('[data-bet-type]');
+
+    betElements.forEach(element => {
+        // Si ya es un número del grid, ya tiene listener
+        if (element.hasAttribute('data-number')) {
+            return;
+        }
+
+        element.addEventListener('click', () => {
+            const betType = element.getAttribute('data-bet-type');
+            const betValue = element.getAttribute('data-bet-value');
+
+            if (!isSpinning) {
+                realizarApuesta(betType, betValue);
+            }
+        });
+    });
+
+    console.log('Listeners de apuestas inicializados');
+}
+
+/**
+ * Realiza una apuesta enviándola al backend
+ * @param {string} tipo - Tipo de apuesta (numero, color, docena, etc.)
+ * @param {string|number} valor - Valor de la apuesta
+ */
+async function realizarApuesta(tipo, valor) {
+    console.log(`Realizando apuesta: ${tipo} - ${valor}`);
+
+    // Guardar la apuesta actual
+    currentBet = {
+        tipo: tipo,
+        valor: valor,
+        cantidad: BET_AMOUNT
+    };
+
+    // Preparar el objeto de apuesta según el tipo
+    const apuestaData = {
+        tipo_apuesta: tipo,
+        valor: valor.toString(),
+        cantidad: BET_AMOUNT
+    };
+
+    try {
+        // Enviar apuesta al backend
+        const response = await fetch(`${BACKEND_URL}/apuesta`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(apuestaData)
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || 'Error al realizar la apuesta');
+        }
+
+        const resultado = await response.json();
+        console.log('Apuesta registrada:', resultado);
+
+        // Mostrar notificación
+        mostrarNotificacion('success', `Apuesta realizada: ${formatearApuesta(tipo, valor)} - ${BET_AMOUNT}€`);
+
+        // Actualizar saldo
+        await actualizarDinero();
+
+        // Si el backend devuelve un número ganador, girar hacia él
+        if (resultado.numero_ganador !== undefined) {
+            setTimeout(() => {
+                girarHasta(resultado.numero_ganador);
+            }, 1000);
+        }
+
+    } catch (error) {
+        console.error('Error al realizar apuesta:', error);
+        mostrarNotificacion('error', `Error: ${error.message}`);
+    }
+}
+
+/**
+ * Formatea el texto de la apuesta para mostrarlo al usuario
+ */
+function formatearApuesta(tipo, valor) {
+    switch(tipo) {
+        case 'numero':
+            return `Número ${valor}`;
+        case 'color':
+            return valor === 'rojo' ? 'ROJO' : 'NEGRO';
+        case 'docena':
+            if (valor === '1') return '1ra Docena (1-12)';
+            if (valor === '2') return '2da Docena (13-24)';
+            if (valor === '3') return '3ra Docena (25-36)';
+            return `Docena ${valor}`;
+        case 'mitad':
+            return valor === 'baja' ? 'Mitad Baja (1-18)' : 'Mitad Alta (19-36)';
+        case 'paridad':
+            return valor === 'par' ? 'PAR' : 'IMPAR';
+        default:
+            return `${tipo}: ${valor}`;
+    }
+}
+
+/**
+ * Muestra una notificación al usuario
+ */
+function mostrarNotificacion(tipo, mensaje) {
+    const notification = document.getElementById('bet-notification');
+    if (!notification) return;
+
+    // Establecer colores según el tipo
+    let bgColor = tipo === 'success' ? 'bg-green-600' : 'bg-red-600';
+
+    notification.className = `fixed top-20 right-2 sm:right-8 w-64 p-4 rounded-lg shadow-lg 
+                             transform transition-transform duration-300 z-50 ${bgColor} text-white`;
+    notification.textContent = mensaje;
+
+    // Mostrar
+    setTimeout(() => {
+        notification.classList.remove('translate-x-full');
+    }, 100);
+
+    // Ocultar después de 3 segundos
+    setTimeout(() => {
+        notification.classList.add('translate-x-full');
+    }, 3000);
+}
 
 // ============ NUEVA IMPLEMENTACIÓN DE RULETA ============
 
@@ -238,16 +383,84 @@ function girarHasta(targetNumber) {
         });
         document.dispatchEvent(event);
 
+        // Enviar resultado al backend si hay apuesta activa
+        if (currentBet) {
+            enviarResultado(winningNumber.num, winningNumber.color);
+        }
+
     }, 5000);
+}
+
+/**
+ * Envía el resultado de la ruleta al backend
+ */
+async function enviarResultado(numero, color) {
+    try {
+        const response = await fetch(`${BACKEND_URL}/resultado`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                numero: numero,
+                color: color,
+                apuesta: currentBet
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Error al enviar resultado');
+        }
+
+        const resultado = await response.json();
+        console.log('Resultado procesado:', resultado);
+
+        // Mostrar si ganó o perdió
+        if (resultado.gano) {
+            mostrarNotificacion('success', `¡GANASTE! +${resultado.ganancia}€`);
+        } else {
+            mostrarNotificacion('error', `Perdiste -${BET_AMOUNT}€`);
+        }
+
+        // Actualizar saldo
+        await actualizarDinero();
+
+        // Limpiar apuesta actual
+        currentBet = null;
+
+    } catch (error) {
+        console.error('Error al enviar resultado:', error);
+    }
 }
 
 /**
  * Función para girar la ruleta de forma manual (botón)
  */
 function girarRuletaManual() {
-    const numeroAleatorio = Math.floor(Math.random() * 37);
-    console.log("Giro manual hacia el número:", numeroAleatorio);
-    girarHasta(numeroAleatorio);
+    if (!currentBet) {
+        mostrarNotificacion('error', 'Debes realizar una apuesta primero');
+        return;
+    }
+
+    // Solicitar al backend que genere un número aleatorio y gire
+    fetch(`${BACKEND_URL}/girar`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+        .then(response => response.json())
+        .then(data => {
+            console.log("Número del backend:", data.numero);
+            girarHasta(data.numero);
+        })
+        .catch(error => {
+            console.error('Error al obtener número del backend:', error);
+            // Fallback: generar número localmente
+            const numeroAleatorio = Math.floor(Math.random() * 37);
+            console.log("Giro manual (fallback) hacia el número:", numeroAleatorio);
+            girarHasta(numeroAleatorio);
+        });
 }
 
 // Hacer la función disponible globalmente
@@ -269,7 +482,7 @@ function isRouletteSpinning() {
 // Exportar funciones para uso global
 window.rouletteAnimation = {
     init: initializeRoulette,
-    spin: girarHasta, // Mantener el nombre original para compatibilidad
+    spin: girarHasta,
     isSpinning: isRouletteSpinning
 };
 
@@ -279,36 +492,27 @@ window.addEventListener("load", () => {
 
     // Inicializar la nueva ruleta
     initializeRoulette();
-
-    // Simular número del backend y girar
-    const numeroDelBack = Math.floor(Math.random() * 37);
-    console.log("Número del backend:", numeroDelBack);
-
-    // Pequeño delay para asegurar que la ruleta esté inicializada
-    setTimeout(() => {
-        girarHasta(numeroDelBack);
-    }, 1000);
 });
 
 async function actualizarDinero() {
     try {
         // Cambia esta URL por tu endpoint real
-        const response = await fetch('http://localhost:8000/saldo');
+        const response = await fetch(`${BACKEND_URL}/saldo`);
         if (!response.ok) throw new Error('Error en la respuesta del servidor');
 
         const { saldo } = await response.json();
 
-        // Suponiendo que el backend devuelve { dinero: 1300.45 }
+        // Suponiendo que el backend devuelve { saldo: 1300.45 }
         const dinero = parseFloat(saldo).toFixed(2); // Forzamos dos decimales
         const h2 = document.getElementById('dinero');
-        h2.textContent = `${dinero} $$`;
+        h2.textContent = `${dinero} €`;
 
     } catch (err) {
         console.error('No se pudo actualizar el dinero:', err);
         // Mostrar valor por defecto si falla la conexión
         const h2 = document.getElementById('dinero');
         if (h2.textContent === 'test') {
-            h2.textContent = '1000.00 $$';
+            h2.textContent = '1000.00 €';
         }
     }
 }
