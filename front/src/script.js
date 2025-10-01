@@ -3,7 +3,21 @@
 // ============ CONFIGURACIÓN DE APUESTAS ============
 const BET_AMOUNT = 100; // Cantidad fija de apuesta
 const BACKEND_URL = 'http://localhost:8000'; // URL del backend
-let currentBet = null; // Apuesta actual
+let apuestasActuales = []; // Array de todas las apuestas realizadas
+let saldoActual = 0; // Saldo actual del jugador
+
+// Mapeo de tipos de apuesta a valores numéricos para el backend
+const APUESTA_VALORES = {
+    'docena-1': 37,
+    'docena-2': 38,
+    'docena-3': 39,
+    'mitad-baja': 40,
+    'paridad-par': 41,
+    'color-rojo': 42,
+    'color-negro': 43,
+    'paridad-impar': 44,
+    'mitad-alta': 45
+};
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Generando grid de números...');
@@ -31,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 shadow-[inset_0_2px_6px_rgba(0,0,0,0.5)]
                 transition-transform duration-400 hover:-translate-y-1 hover:shadow-xl
                 bg-gradient-to-b from-red-600 to-orange-500 z-10
-                cursor-pointer
+                cursor-pointer relative
             `;
 
             // Alternancia de degradado por impar/par
@@ -45,11 +59,20 @@ document.addEventListener('DOMContentLoaded', () => {
             div.setAttribute('data-bet-type', 'numero');
             div.setAttribute('data-bet-value', numero);
 
-            // Agregar event listener para hacer click en el número
-            div.addEventListener('click', () => {
+            // Agregar event listeners
+            div.addEventListener('click', (e) => {
+                e.preventDefault();
                 console.log(`Clicked on number: ${numero}`);
                 if (!isSpinning) {
-                    realizarApuesta('numero', numero);
+                    agregarApuesta(numero, div);
+                }
+            });
+
+            // Click derecho para quitar apuesta
+            div.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                if (!isSpinning) {
+                    quitarApuesta(numero, div);
                 }
             });
 
@@ -79,12 +102,23 @@ function initializeBetListeners() {
             return;
         }
 
-        element.addEventListener('click', () => {
-            const betType = element.getAttribute('data-bet-type');
-            const betValue = element.getAttribute('data-bet-value');
+        const betType = element.getAttribute('data-bet-type');
+        const betValue = element.getAttribute('data-bet-value');
+        const betKey = `${betType}-${betValue}`;
 
+        // Click izquierdo para agregar apuesta
+        element.addEventListener('click', (e) => {
+            e.preventDefault();
             if (!isSpinning) {
-                realizarApuesta(betType, betValue);
+                agregarApuesta(betKey, element);
+            }
+        });
+
+        // Click derecho para quitar apuesta
+        element.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            if (!isSpinning) {
+                quitarApuesta(betKey, element);
             }
         });
     });
@@ -93,85 +127,141 @@ function initializeBetListeners() {
 }
 
 /**
- * Realiza una apuesta enviándola al backend
- * @param {string} tipo - Tipo de apuesta (numero, color, docena, etc.)
- * @param {string|number} valor - Valor de la apuesta
+ * Agrega una ficha de apuesta visual y la registra
  */
-async function realizarApuesta(tipo, valor) {
-    console.log(`Realizando apuesta: ${tipo} - ${valor}`);
+function agregarApuesta(valorApuesta, elemento) {
+    // Verificar si hay suficiente saldo
+    if (saldoActual < BET_AMOUNT) {
+        mostrarNotificacion('error', '¡Saldo insuficiente!');
+        return;
+    }
 
-    // Guardar la apuesta actual
-    currentBet = {
-        tipo: tipo,
-        valor: valor,
-        cantidad: BET_AMOUNT
-    };
-
-    // Preparar el objeto de apuesta según el tipo
-    const apuestaData = {
-        tipo_apuesta: tipo,
-        valor: valor.toString(),
-        cantidad: BET_AMOUNT
-    };
-
-    try {
-        // Enviar apuesta al backend
-        const response = await fetch(`${BACKEND_URL}/apuesta`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(apuestaData)
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.detail || 'Error al realizar la apuesta');
+    // Convertir el valor de apuesta al formato para backend
+    let valorBackend;
+    if (typeof valorApuesta === 'number' || !isNaN(Number(valorApuesta))) {
+        // Es un número del 0-36
+        valorBackend = Number(valorApuesta);
+    } else {
+        // Es una apuesta especial
+        valorBackend = APUESTA_VALORES[valorApuesta];
+        if (valorBackend === undefined) {
+            console.error('Tipo de apuesta no reconocido:', valorApuesta);
+            return;
         }
+    }
 
-        const resultado = await response.json();
-        console.log('Apuesta registrada:', resultado);
+    // Agregar la apuesta al array
+    apuestasActuales.push(valorBackend);
 
-        // Mostrar notificación
-        mostrarNotificacion('success', `Apuesta realizada: ${formatearApuesta(tipo, valor)} - ${BET_AMOUNT}€`);
+    // Actualizar saldo local
+    saldoActual -= BET_AMOUNT;
+    actualizarSaldoVisual();
 
-        // Actualizar saldo
-        await actualizarDinero();
+    // Crear o actualizar la ficha visual
+    crearFichaVisual(elemento, valorApuesta);
 
-        // Si el backend devuelve un número ganador, girar hacia él
-        if (resultado.numero_ganador !== undefined) {
-            setTimeout(() => {
-                girarHasta(resultado.numero_ganador);
-            }, 1000);
-        }
+    console.log('Apuesta agregada:', valorBackend);
+    console.log('Total apuestas:', apuestasActuales);
+}
 
-    } catch (error) {
-        console.error('Error al realizar apuesta:', error);
-        mostrarNotificacion('error', `Error: ${error.message}`);
+/**
+ * Quita una apuesta (click derecho)
+ */
+function quitarApuesta(valorApuesta, elemento) {
+    // Convertir el valor de apuesta al formato para backend
+    let valorBackend;
+    if (typeof valorApuesta === 'number' || !isNaN(Number(valorApuesta))) {
+        valorBackend = Number(valorApuesta);
+    } else {
+        valorBackend = APUESTA_VALORES[valorApuesta];
+        if (valorBackend === undefined) return;
+    }
+
+    // Buscar y eliminar una instancia de esta apuesta
+    const index = apuestasActuales.indexOf(valorBackend);
+    if (index === -1) {
+        console.log('No hay apuestas para quitar en esta posición');
+        return;
+    }
+
+    // Quitar la apuesta del array
+    apuestasActuales.splice(index, 1);
+
+    // Devolver el dinero al saldo
+    saldoActual += BET_AMOUNT;
+    actualizarSaldoVisual();
+
+    // Actualizar la ficha visual
+    actualizarFichaVisual(elemento, valorApuesta);
+
+    console.log('Apuesta quitada:', valorBackend);
+    console.log('Total apuestas:', apuestasActuales);
+}
+
+/**
+ * Crea o actualiza la ficha visual en el elemento
+ */
+function crearFichaVisual(elemento, valorApuesta) {
+    // Hacer que el elemento sea relativo para posicionar la ficha
+    if (!elemento.style.position) {
+        elemento.style.position = 'relative';
+    }
+
+    // Buscar si ya existe una ficha
+    let ficha = elemento.querySelector('.ficha-apuesta');
+
+    if (!ficha) {
+        // Crear nueva ficha
+        ficha = document.createElement('div');
+        ficha.className = 'ficha-apuesta absolute top-1 right-1 bg-red-600 rounded-full w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center text-white font-bold text-xs sm:text-sm border-2 border-white shadow-lg z-50 pointer-events-none';
+        ficha.setAttribute('data-count', '1');
+        ficha.textContent = '100';
+        elemento.appendChild(ficha);
+    } else {
+        // Actualizar contador
+        let count = parseInt(ficha.getAttribute('data-count') || '0');
+        count++;
+        ficha.setAttribute('data-count', count);
+        ficha.textContent = count > 1 ? `${count}x` : '100';
     }
 }
 
 /**
- * Formatea el texto de la apuesta para mostrarlo al usuario
+ * Actualiza la ficha visual cuando se quita una apuesta
  */
-function formatearApuesta(tipo, valor) {
-    switch(tipo) {
-        case 'numero':
-            return `Número ${valor}`;
-        case 'color':
-            return valor === 'rojo' ? 'ROJO' : 'NEGRO';
-        case 'docena':
-            if (valor === '1') return '1ra Docena (1-12)';
-            if (valor === '2') return '2da Docena (13-24)';
-            if (valor === '3') return '3ra Docena (25-36)';
-            return `Docena ${valor}`;
-        case 'mitad':
-            return valor === 'baja' ? 'Mitad Baja (1-18)' : 'Mitad Alta (19-36)';
-        case 'paridad':
-            return valor === 'par' ? 'PAR' : 'IMPAR';
-        default:
-            return `${tipo}: ${valor}`;
+function actualizarFichaVisual(elemento, valorApuesta) {
+    const ficha = elemento.querySelector('.ficha-apuesta');
+    if (!ficha) return;
+
+    let count = parseInt(ficha.getAttribute('data-count') || '0');
+    count--;
+
+    if (count <= 0) {
+        // Eliminar la ficha
+        ficha.remove();
+    } else {
+        // Actualizar el contador
+        ficha.setAttribute('data-count', count);
+        ficha.textContent = count > 1 ? `${count}x` : '100';
     }
+}
+
+/**
+ * Actualiza el saldo visual en la interfaz
+ */
+function actualizarSaldoVisual() {
+    const h2 = document.getElementById('dinero');
+    if (h2) {
+        h2.textContent = `${saldoActual.toFixed(2)} €`;
+    }
+}
+
+/**
+ * Limpia todas las fichas visuales
+ */
+function limpiarTodasLasFichas() {
+    const fichas = document.querySelectorAll('.ficha-apuesta');
+    fichas.forEach(ficha => ficha.remove());
 }
 
 /**
@@ -383,8 +473,8 @@ function girarHasta(targetNumber) {
         });
         document.dispatchEvent(event);
 
-        // Enviar resultado al backend si hay apuesta activa
-        if (currentBet) {
+        // Enviar resultado al backend si hay apuestas activas
+        if (apuestasActuales.length > 0) {
             enviarResultado(winningNumber.num, winningNumber.color);
         }
 
@@ -392,7 +482,7 @@ function girarHasta(targetNumber) {
 }
 
 /**
- * Envía el resultado de la ruleta al backend
+ * Envía el resultado de la ruleta al backend con todas las apuestas
  */
 async function enviarResultado(numero, color) {
     try {
@@ -404,7 +494,7 @@ async function enviarResultado(numero, color) {
             body: JSON.stringify({
                 numero: numero,
                 color: color,
-                apuesta: currentBet
+                apuestas: apuestasActuales
             })
         });
 
@@ -419,17 +509,19 @@ async function enviarResultado(numero, color) {
         if (resultado.gano) {
             mostrarNotificacion('success', `¡GANASTE! +${resultado.ganancia}€`);
         } else {
-            mostrarNotificacion('error', `Perdiste -${BET_AMOUNT}€`);
+            mostrarNotificacion('error', `Perdiste -${resultado.perdida}€`);
         }
 
-        // Actualizar saldo
+        // Actualizar saldo desde el backend
         await actualizarDinero();
 
-        // Limpiar apuesta actual
-        currentBet = null;
+        // Limpiar apuestas y fichas
+        apuestasActuales = [];
+        limpiarTodasLasFichas();
 
     } catch (error) {
         console.error('Error al enviar resultado:', error);
+        mostrarNotificacion('error', 'Error al procesar resultado');
     }
 }
 
@@ -437,8 +529,8 @@ async function enviarResultado(numero, color) {
  * Función para girar la ruleta de forma manual (botón)
  */
 function girarRuletaManual() {
-    if (!currentBet) {
-        mostrarNotificacion('error', 'Debes realizar una apuesta primero');
+    if (apuestasActuales.length === 0) {
+        mostrarNotificacion('error', 'Debes realizar al menos una apuesta primero');
         return;
     }
 
@@ -447,7 +539,10 @@ function girarRuletaManual() {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-        }
+        },
+        body: JSON.stringify({
+            apuestas: apuestasActuales
+        })
     })
         .then(response => response.json())
         .then(data => {
@@ -496,14 +591,16 @@ window.addEventListener("load", () => {
 
 async function actualizarDinero() {
     try {
-        // Cambia esta URL por tu endpoint real
         const response = await fetch(`${BACKEND_URL}/saldo`);
         if (!response.ok) throw new Error('Error en la respuesta del servidor');
 
         const { saldo } = await response.json();
 
-        // Suponiendo que el backend devuelve { saldo: 1300.45 }
-        const dinero = parseFloat(saldo).toFixed(2); // Forzamos dos decimales
+        // Actualizar saldo global
+        saldoActual = parseFloat(saldo);
+
+        // Actualizar UI
+        const dinero = saldoActual.toFixed(2);
         const h2 = document.getElementById('dinero');
         h2.textContent = `${dinero} €`;
 
@@ -512,6 +609,7 @@ async function actualizarDinero() {
         // Mostrar valor por defecto si falla la conexión
         const h2 = document.getElementById('dinero');
         if (h2.textContent === 'test') {
+            saldoActual = 1000.00;
             h2.textContent = '1000.00 €';
         }
     }
@@ -527,7 +625,4 @@ document.addEventListener('rouletteResult', (event) => {
     console.log(`   Número: ${number}`);
     console.log(`   Color: ${color}`);
     console.log(`   Predeterminado: ${wasTargeted ? 'Sí' : 'No'}`);
-
-    // Aquí puedes agregar lógica adicional cuando termine la ruleta
-    // Por ejemplo: actualizar puntuaciones, mostrar animaciones, etc.
 });
