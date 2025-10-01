@@ -6,7 +6,6 @@ name = "pypi"
 [packages]
 psycopg = {extras = ["binary"], version = "==3.2.10"}
 fastapi = {extras = ["standard"], version = "==0.117.1"}
-sqlmodel = "==0.0.25"
 
 [dev-packages]
 
