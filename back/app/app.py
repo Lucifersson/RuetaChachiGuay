@@ -3,7 +3,7 @@
 from fastapi import FastAPI
 
 # Ruleta
-from app import env
+from app import env, api
 
 
 # Crear el punto de entrada de FastAPI
@@ -14,6 +14,8 @@ app = FastAPI(
 )
 
 # Crear las rutas
+app.include_router(api.auth, prefix="/auth")
+
 # Crear los middlewares
 
 
