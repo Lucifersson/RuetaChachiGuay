@@ -11,10 +11,12 @@ CREATE TABLE IF NOT EXISTS user_roulette (
 CREATE TABLE IF NOT EXISTS auth_token (
     id SERIAL NOT NULL,
     user_id INTEGER NOT NULL,
+    token TEXT NOT NULL,
     expiration_date TIMESTAMP NOT NULL,
 
     CONSTRAINT auth_token_pk PRIMARY KEY(id),
-    CONSTRAINT auth_token_user_id_fk FOREIGN KEY(user_id) REFERENCES user_roulette(id) ON DELETE CASCADE
+    CONSTRAINT auth_token_user_id_fk FOREIGN KEY(user_id) REFERENCES user_roulette(id) ON DELETE CASCADE,
+    CONSTRAINT auth_token_token_uq UNIQUE(token)
 );
 
 CREATE TABLE IF NOT EXISTS spin (
