@@ -1,11 +1,18 @@
-""" Conexion con la base de datos y el pool de conexiones. """
+""" Conexión a la BBDD """
+# Python
+import os
 from collections.abc import AsyncIterator
-from psycopg_pool import AsyncConnectionPool
-from psycopg import AsyncConnection, AsyncCursor
+
+# Ruleta
 from app import env
 
-URL = "postgres+psycopg://{}:{}@{}:{}/{}".format(
-    env.POSTGRES_HOST,
+# 3rd Party
+from psycopg import AsyncConnection, AsyncCursor
+from psycopg_pool import AsyncConnectionPool
+
+
+URL = "postgresql+psycopg://{}:{}@{}:{}/{}".format(
+    env.POSTGRES_USER,
     env.POSTGRES_PASSWORD,
     env.POSTGRES_HOST,
     env.POSTGRES_PORT,
@@ -14,11 +21,13 @@ URL = "postgres+psycopg://{}:{}@{}:{}/{}".format(
 
 pool = AsyncConnectionPool(
     conninfo=URL,
+    num_workers=os.cpu_count() or 3,
     min_size=1,
     max_size=5,
 )
 
-async def get_session() -> AsyncIterator[AsyncConnection]:
+
+async def get_connection() -> AsyncIterator[AsyncConnection]:
     async with pool.connection() as con:
         yield con
 

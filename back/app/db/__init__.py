@@ -1,2 +1,1 @@
-from .session import get_session
-from . import querys
+from .connection import get_connection, get_cursor
