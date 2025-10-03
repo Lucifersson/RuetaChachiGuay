@@ -588,7 +588,6 @@ function girarRuletaManual() {
             console.log("Número del backend:", data.numero);
             girarHasta(data.numero);
             saldoActual = data.saldo
-            actualizarSaldoVisual()
         })
         .catch(error => {
             console.error('Error al obtener número del backend:', error);
@@ -637,6 +636,7 @@ async function actualizarDinero() {
             {
                 method: 'GET',
                 headers: {
+                    'Access-Control-Allow-Origin': true,
                     'x-api-token': authCtx.token
                 }
             }
