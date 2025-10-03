@@ -1,6 +1,7 @@
 # FastAPI
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 
 # Ruleta
 from app import env, api
@@ -13,10 +14,17 @@ app = FastAPI(
     description="Backend para la ruleta"
 )
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.middleware("http")
 async def user_authorization(request: Request, call_next):
-    if request.url.path.startswith(("/auth")):
+    if request.method == "OPTIONS" or request.url.path.startswith(("/auth")):
         return await call_next(request)
 
     token = request.headers.get("x-api-token")

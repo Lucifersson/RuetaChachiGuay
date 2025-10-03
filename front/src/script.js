@@ -1,9 +1,14 @@
 // src/grid.js
+const authCtx = {
+  username: undefined,
+  token: undefined,
+};
 
 // ============ CONFIGURACIÓN DE APUESTAS ============
 const BET_AMOUNT = 100; // Cantidad fija de apuesta
 const BACKEND_URL = 'http://localhost:8000'; // URL del backend
 let apuestasActuales = []; // Array de todas las apuestas realizadas
+const apuestasToSend = {}
 let saldoActual = 0; // Saldo actual del jugador
 
 // Mapeo de tipos de apuesta a valores numéricos para el backend
@@ -19,7 +24,30 @@ const APUESTA_VALORES = {
     'mitad-alta': 45
 };
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get("token");
+    if (!token) {
+        window.location.href = "/login.html";
+        return;
+    }
+    const response = await fetch(
+        `${BACKEND_URL}/auth/check/${token}`,
+        {
+            method: 'GET',
+        }
+    );
+    if (!response.ok) {
+        throw new Error("Errar al realizar una petición")
+    }
+
+    const data = await response.json();
+    if (!data["status"]) {
+        window.location.href = "/login.html";
+        return;
+    }
+    authCtx.token = token;
+
     console.log('Generando grid de números...');
     const grid = document.getElementById('grid');
     if (!grid) {
@@ -85,6 +113,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Inicializar listeners para apuestas especiales
     initializeBetListeners();
+
+    await actualizarDinero();
 });
 
 // ============ SISTEMA DE APUESTAS ============
@@ -152,6 +182,10 @@ function agregarApuesta(valorApuesta, elemento) {
 
     // Agregar la apuesta al array
     apuestasActuales.push(valorBackend);
+    if (!(valorBackend in apuestasToSend)) {
+        apuestasToSend[valorBackend] = 0;
+    }
+    apuestasToSend[valorBackend] += BET_AMOUNT;
 
     // Actualizar saldo local
     saldoActual -= BET_AMOUNT;
@@ -175,6 +209,12 @@ function quitarApuesta(valorApuesta, elemento) {
     } else {
         valorBackend = APUESTA_VALORES[valorApuesta];
         if (valorBackend === undefined) return;
+    }
+    if (valorBackend in apuestasToSend) {
+        apuestasToSend[valorBackend] -= BET_AMOUNT;
+        if (apuestasToSend[valorBackend] < 0) {
+            delete apuestasToSend[valorBackend];
+        }
     }
 
     // Buscar y eliminar una instancia de esta apuesta
@@ -274,7 +314,7 @@ function mostrarNotificacion(tipo, mensaje) {
     // Establecer colores según el tipo
     let bgColor = tipo === 'success' ? 'bg-green-600' : 'bg-red-600';
 
-    notification.className = `fixed top-20 right-2 sm:right-8 w-64 p-4 rounded-lg shadow-lg 
+    notification.className = `fixed top-20 right-2 sm:right-8 w-64 p-4 rounded-lg shadow-lg
                              transform transition-transform duration-300 z-50 ${bgColor} text-white`;
     notification.textContent = mensaje;
 
@@ -332,7 +372,7 @@ function initializeRoulette() {
     for (let cycle = 0; cycle < 8; cycle++) {
         rouletteNumbers.forEach(item => {
             const slot = document.createElement('div');
-            slot.className = `w-full h-11 border border-white/20 border-b-black/30 flex items-center justify-center 
+            slot.className = `w-full h-11 border border-white/20 border-b-black/30 flex items-center justify-center
                             text-lg font-bold text-white font-serif box-border
                             shadow-[inset_0_1px_2px_rgba(255,255,255,0.1)]`;
 
@@ -475,7 +515,7 @@ function girarHasta(targetNumber) {
 
         // Enviar resultado al backend si hay apuestas activas
         if (apuestasActuales.length > 0) {
-            enviarResultado(winningNumber.num, winningNumber.color);
+            //enviarResultado(winningNumber.num, winningNumber.color);
         }
 
     }, 5000);
@@ -535,19 +575,20 @@ function girarRuletaManual() {
     }
 
     // Solicitar al backend que genere un número aleatorio y gire
-    fetch(`${BACKEND_URL}/girar`, {
+    fetch(`${BACKEND_URL}/ruleta/girar`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
+            'x-api-token': authCtx.token
         },
-        body: JSON.stringify({
-            apuestas: apuestasActuales
-        })
+        body: JSON.stringify(apuestasToSend)
     })
         .then(response => response.json())
         .then(data => {
             console.log("Número del backend:", data.numero);
             girarHasta(data.numero);
+            saldoActual = data.saldo
+            actualizarSaldoVisual()
         })
         .catch(error => {
             console.error('Error al obtener número del backend:', error);
@@ -591,7 +632,15 @@ window.addEventListener("load", () => {
 
 async function actualizarDinero() {
     try {
-        const response = await fetch(`${BACKEND_URL}/saldo`);
+        const response = await fetch(
+            `${BACKEND_URL}/ruleta/saldo`,
+            {
+                method: 'GET',
+                headers: {
+                    'x-api-token': authCtx.token
+                }
+            }
+        );
         if (!response.ok) throw new Error('Error en la respuesta del servidor');
 
         const { saldo } = await response.json();
@@ -609,8 +658,7 @@ async function actualizarDinero() {
         // Mostrar valor por defecto si falla la conexión
         const h2 = document.getElementById('dinero');
         if (h2.textContent === 'test') {
-            saldoActual = 1000.00;
-            h2.textContent = '1000.00 €';
+            h2.textContent = `${saldoActual} €`;
         }
     }
 }

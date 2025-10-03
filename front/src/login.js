@@ -20,6 +20,12 @@ async function loginUser(username, password) {
         alert('Login exitoso');
         // Aquí podrías redirigir al usuario, por ejemplo:
         // window.location.href = "/dashboard.html";
+
+        const token = data["token"];
+        if (token) {
+            window.location.href = `/index.html?token=${token}`
+        }
+
         return data;
     } catch (error) {
         console.error('Error al iniciar sesión:', error);

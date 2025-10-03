@@ -103,18 +103,15 @@ ruleta_router = APIRouter(prefix="/ruleta", tags=["ruleta"])
 
 
 @ruleta_router.post("/girar", name="Girar Ruleta", description="Gira la ruleta, realiza una apuesta y devuelve el nuevo saldo.")
-async def girar_ruleta(datos_apuestas: ApuestaData, request: Request):
+async def girar_ruleta(datos_apuestas: dict[int, float], request: Request):
     user: User = request.state.user
     saldo = user.credits
 
-    total_apuesta = sum(
-        apuesta.dinero
-        for apuesta in datos_apuestas.apuestas
-    )
+    bets = { num: bet for num, bet in datos_apuestas.items() if 0 <= num <= 36 and bet > 0 }
+
+    total_apuesta = sum(bets.values())
     if total_apuesta > saldo:
         raise HTTPException(status_code=401, detail="No hay suficiente saldo")
-
-    bets = { apuesta.casilla: apuesta.dinero for apuesta in datos_apuestas.apuestas }
 
     numero = random.randint(0, 36)
 
@@ -122,8 +119,8 @@ async def girar_ruleta(datos_apuestas: ApuestaData, request: Request):
     tiradas[tirada.id] = tirada
 
     for apuesta in (
-        Apuesta(next(apuesta_id_gen), tirada.id, user.username, a.casilla, a.dinero)
-        for a in datos_apuestas.apuestas
+        Apuesta(next(apuesta_id_gen), tirada.id, user.username, casilla, dinero)
+        for casilla, dinero in bets.items()
     ):
         apuestas[apuesta.id] = apuesta
 
@@ -140,6 +137,12 @@ async def girar_ruleta(datos_apuestas: ApuestaData, request: Request):
 
     return { "numero": numero, "saldo": user.credits }
 
+@ruleta_router.get("/saldo", name="Obtener Saldo", description="Obtiene el saldo de un usuario")
+async def obtener_saldo(request: Request):
+    user: User = request.state.user
+    saldo = user.credits
+
+    return { "saldo": saldo }
 
 # Routers
 routers = (auth_router, ruleta_router)

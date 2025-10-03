@@ -8,7 +8,6 @@ async function registerUser(username, password, birthdate) {
             body: JSON.stringify({
                 username: username,
                 password: password,
-                birthdate: birthdate
             })
         });
 
@@ -19,6 +18,7 @@ async function registerUser(username, password, birthdate) {
         const data = await response.json();
         console.log('Usuario registrado:', data);
         alert('Usuario registrado correctamente');
+        window.location.href = "/login.html";
         return data;
     } catch (error) {
         console.error('Error al registrar usuario:', error);
